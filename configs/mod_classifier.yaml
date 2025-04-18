@@ -1,0 +1,15 @@
+model:
+  model_name: convnextv2_tiny.fcmae_ft_in1k
+  lr: 1e-4
+
+data:
+  data_dir: data
+  batch_size: 16
+  image_size: 224
+  num_workers: 4
+
+trainer:
+  max_epochs: 50
+  accelerator: auto
+  devices: 1
+  precision: 32

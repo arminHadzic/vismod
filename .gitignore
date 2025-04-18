@@ -1,0 +1,4 @@
+scripts/*
+data/*
+lightning_logs/*
+inference*
