@@ -28,6 +28,7 @@ Choose whether to run with a CPU or GPU.
 
 ## Train the Model:
 1. Structure your data in this manner:
+```
 your-data-dir/
 	├── train/
 	│   ├── safe/
@@ -38,7 +39,7 @@ your-data-dir/
 	├── test/       # optional
 	    ├── safe/
 	    └── not/
-
+```
 2. Run a training job:
 ```bash
 	make train

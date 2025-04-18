@@ -92,7 +92,17 @@ train:
 # ---------- Formatting ----------
 
 format:
-	yapf -ir src/
+	@TAG=$$(docker images -q vismod:cpu); \
+	if [ -n "$$TAG" ]; then \
+	  IMAGE=vismod:cpu; \
+	elif docker images -q vismod:gpu > /dev/null; then \
+	  IMAGE=vismod:gpu; \
+	else \
+	  echo "[✘] Neither vismod:cpu nor vismod:gpu image found."; exit 1; \
+	fi; \
+	echo "[•] Using image: $$IMAGE"; \
+	docker run --rm -v "$$PWD:/app" $$IMAGE yapf -ir /app/src
+
 
 # ---------- Cleanup ----------
 

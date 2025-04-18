@@ -9,18 +9,16 @@ from torchmetrics.classification import BinaryAccuracy, BinaryAUROC, BinaryF1Sco
 
 class ModClassifier(pl.LightningModule):
 
-  def __init__(self,
-               model_name: str = "convnextv2_tiny.fcmae_ft_in1k",
-               lr: float = 1e-4):
+  def __init__(self, model_name: str = "convnextv2_tiny.fcmae_ft_in1k", lr: float = 1e-4):
     super().__init__()
     self.save_hyperparameters()
 
     self.model = timm.create_model(
-            model_name,
-            pretrained=True,
-            num_classes=1,            # binary classification
-            global_pool="avg",        # ensures output shape is (B, C)
-        )
+        model_name,
+        pretrained=True,
+        num_classes=1,  # binary classification
+        global_pool="avg",  # ensures output shape is (B, C)
+    )
 
     self.acc = BinaryAccuracy()
     self.auc = BinaryAUROC()

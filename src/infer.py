@@ -25,13 +25,16 @@ def load_image(path, image_size=224):
       transforms.ToPILImage(),
       transforms.Resize((image_size, image_size)),
       transforms.ToTensor(),
-      transforms.Normalize(mean=[0.485, 0.456, 0.406],  # ImageNet
-                           std=[0.229, 0.224, 0.225]),
+      transforms.Normalize(
+          mean=[0.485, 0.456, 0.406],  # ImageNet
+          std=[0.229, 0.224, 0.225]),
   ])
   return transform(img).unsqueeze(0)
 
 
-def setup_model(checkpoint_path: Path = None, device: str = "cpu", verbose: bool = False) -> LightningModule:
+def setup_model(checkpoint_path: Path = None,
+                device: str = "cpu",
+                verbose: bool = False) -> LightningModule:
   if checkpoint_path:
     if verbose:
       print(f"[•] Loading checkpoint: {checkpoint_path}")
@@ -64,9 +67,7 @@ def run_parallel_inference(image_paths, checkpoint_path, threshold=0.5, num_work
   from functools import partial
   from concurrent.futures import ProcessPoolExecutor
 
-  fn = partial(predict_single,
-               checkpoint_path=checkpoint_path,
-               threshold=threshold)
+  fn = partial(predict_single, checkpoint_path=checkpoint_path, threshold=threshold)
   with ProcessPoolExecutor(max_workers=num_workers) as executor:
     return list(executor.map(fn, image_paths))
 
@@ -117,9 +118,8 @@ def main(checkpoint_path: str,
     return
 
   image_files = (
-    Path(entry.path) for entry in os.scandir(input_path)
-    if entry.is_file() and Path(entry.name).suffix.lower() in {".jpg", ".jpeg", ".png"}
-  )
+      Path(entry.path) for entry in os.scandir(input_path)
+      if entry.is_file() and Path(entry.name).suffix.lower() in {".jpg", ".jpeg", ".png"})
   to_process = [f for f in image_files if str(f) not in processed_files]
 
   if not to_process:
@@ -139,31 +139,15 @@ if __name__ == "__main__":
   import argparse
 
   parser = argparse.ArgumentParser(description="Batch inference with ModClassifier")
-  parser.add_argument("--checkpoint", 
-                      type=str, 
-                      default=None, 
-                      help="Path to model .ckpt file (optional)")
-  parser.add_argument("--input",
-                      type=str,
-                      required=True,
-                      help="Path to image or directory")
-  parser.add_argument("--output",
-                      type=str,
-                      default="inference_results",
-                      help="Output directory (Parquet files)")
-  parser.add_argument("--threshold",
-                      type=float,
-                      default=0.5,
-                      help="Classification threshold")
-  parser.add_argument("--num_workers",
-                      type=int,
-                      default=4,
-                      help="Number of parallel workers")
-  parser.add_argument("--batch_size",
-                      type=int,
-                      default=1000,
-                      help="Number of images per output file")
+  parser.add_argument(
+      "--checkpoint", type=str, default=None, help="Path to model .ckpt file (optional)")
+  parser.add_argument("--input", type=str, required=True, help="Path to image or directory")
+  parser.add_argument(
+      "--output", type=str, default="inference_results", help="Output directory (Parquet files)")
+  parser.add_argument("--threshold", type=float, default=0.5, help="Classification threshold")
+  parser.add_argument("--num_workers", type=int, default=4, help="Number of parallel workers")
+  parser.add_argument(
+      "--batch_size", type=int, default=1000, help="Number of images per output file")
 
   args = parser.parse_args()
-  main(args.checkpoint, args.input, args.output, args.threshold, args.num_workers,
-       args.batch_size)
+  main(args.checkpoint, args.input, args.output, args.threshold, args.num_workers, args.batch_size)
