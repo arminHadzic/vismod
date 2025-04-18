@@ -2,3 +2,13 @@ scripts/*
 data/*
 lightning_logs/*
 inference*
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.ckpt
+.vscode/
+.idea/
+.env
+scripts/
+data/
