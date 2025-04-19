@@ -44,6 +44,8 @@ class ImageDataModule(pl.LightningDataModule):
 
     if val_path.exists():
       self.val_dataset = datasets.ImageFolder(val_path, transform=self.transform)
+    elif test_path.exists():
+      self.val_dataset = datasets.ImageFolder(test_path, transform=self.transform)
     else:
       print("[!] Validation folder not found — using training data as val split")
       val_size = int(0.2 * len(self.train_dataset))

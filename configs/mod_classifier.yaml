@@ -9,7 +9,7 @@ data:
   num_workers: 4
 
 trainer:
-  max_epochs: 50
+  max_epochs: 250
   accelerator: auto
   devices: 1
   precision: 32
