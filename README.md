@@ -7,26 +7,25 @@ Vismod is a neural network–powered tool designed to automatically moderate vis
 [Install Docker](https://docs.docker.com/desktop/), the CLI is the most important part. Administrative permissions will be required.
 
 ## Run Docker
-
-Choose whether to run with a CPU or GPU.
+Choose whether to run with a CPU or GPU, then build the docker container from the project root directory (vismod/).
 
 ### Use CPU-Only:
 ```bash
-	# From project root (vismod/)
 	make build-cpu     # build slim version
-	make run-cpu       # run on CPU
 ```
 ### Use GPU:
 ```bash
-	# From project root (vismod/)
 	make build-gpu     # CUDA-optimized build
-	make run-gpu       # run with GPU support
 ```
 
-### Docker Image Cleanup (Optional):
+### Optional Commands
+- Docker image cleanup:
 ```bash
-	# From project root (vismod/)
 	make clean         # optional image cleanup
+```
+- Shell into container (GPU used, if available):
+```bash
+	make run
 ```
 
 ## Train the Model:
@@ -63,8 +62,7 @@ your-data-dir/
 ```
 - Specify a data directory
 ```bash
-	# With a different config file
-	make train DATA_DIR=your-data-dir
+	make train DATA_DIR=your-data-dir	# With a different config file
 ```
 
 ## Evaluate the Model:
@@ -72,6 +70,7 @@ Compute metrics on a held-out (unseen) test set to approximate how well the mode
 ```bash
 	make eval CHECKPOINT=my.ckpt DATA_DIR=your-data-dir
 ```
+### Optional Commands
 - Force CPU
 ```bash
 	make eval CHECKPOINT=my.ckpt DATA_DIR=your-data-dir USE_GPU=0   # Force CPU
@@ -89,7 +88,7 @@ Run on 1 image or an entire directory:
 ### Optional Commands
 - Custom output directory
 ```bash
-	make infer CHECKPOINT=my.ckpt INPUT=my_data OUTPUT=my_dir # Custom output directory
+	make infer CHECKPOINT=my.ckpt INPUT=my_data OUTPUT=my_dir	# Custom output directory
 ```
 - Force CPU
 ```bash
@@ -108,14 +107,8 @@ Run on 1 image or an entire directory:
 	make infer CHECKPOINT=my.ckpt INPUT=my_data WORKERS=16
 ```
 
-## Shell into Container (GPU if Available):
-```bash
-	make run
-```
-
 ## Miscellaneous:
 To re-lint the code:
 ```bash
-	# From project root (vismod/)
-	make format        # format with yapf (2-space config)
+	make format		# format with yapf (2-space config)
 ```
