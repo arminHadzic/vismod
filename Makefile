@@ -3,13 +3,14 @@ IMAGE_NAME=vismod
 CPU_TAG=$(IMAGE_NAME):cpu
 GPU_TAG=$(IMAGE_NAME):gpu
 
-# Training and inference config (overridable)
+# These are all overridable
+DATA_DIR ?= data
 CONFIG ?= configs/mod_classifier.yaml
 CHECKPOINT ?= checkpoints/model.ckpt
 INPUT ?= images_to_check
 BATCH ?= 1000
 WORKERS ?= 8
-DATA_DIR ?= data
+SHM_SIZE ?= 1g
 
 # Default output directory with timestamp
 NOW := $(shell date +"%Y-%m-%d_%H-%M-%S")
@@ -37,6 +38,48 @@ build-gpu:
 run:
 	docker run $(RUNTIME) -it --rm -v $$PWD:/app $(TAG)
 
+
+
+# ---------- Training ----------
+
+train:
+	@if [ -z "$(DATA_DIR)" ]; then \
+	  echo "[!] DATA_DIR is not set"; exit 1; \
+	fi; \
+	MOUNT_SRC="$(DATA_DIR)"; \
+	MOUNT_DEST="/app/data"; \
+	[ "$$(echo $(DATA_DIR) | cut -c1)" != "/" ] && MOUNT_SRC="$$PWD/$(DATA_DIR)"; \
+	echo "[•] Mounting $$MOUNT_SRC to $$MOUNT_DEST"; \
+	docker run $(RUNTIME) --rm \
+	  --shm-size=$(SHM_SIZE) \
+	  -v "$$MOUNT_SRC:$$MOUNT_DEST" \
+	  -v "$$PWD:/app" \
+	  $(TAG) \
+	  python src/train.py \
+	    fit \
+	    --config /app/$(CONFIG) \
+	    --data.data_dir=$$MOUNT_DEST
+
+# ---------- Evaluate ----------
+
+eval:
+	@if [ -z "$(CHECKPOINT)" ] || [ -z "$(DATA_DIR)" ]; then \
+	  echo "[!] CHECKPOINT and DATA_DIR must be specified"; exit 1; \
+	fi; \
+	CHECKPOINT_PATH="$(CHECKPOINT)"; \
+	DATA_PATH="$(DATA_DIR)"; \
+	[ "$$(echo $$CHECKPOINT_PATH | cut -c1)" != "/" ] && CHECKPOINT_PATH="$$PWD/$$CHECKPOINT_PATH"; \
+	[ "$$(echo $$DATA_PATH | cut -c1)" != "/" ] && DATA_PATH="$$PWD/$$DATA_PATH"; \
+	docker run $(RUNTIME) --rm \
+	  --shm-size=$(SHM_SIZE) \
+	  -v "$$PWD:/app" \
+	  -v "$$(dirname $$CHECKPOINT_PATH):$$(dirname $$CHECKPOINT_PATH)" \
+	  -v "$$DATA_PATH:$$DATA_PATH" \
+	  $(TAG) \
+	  python src/eval.py \
+	    --checkpoint="$$CHECKPOINT_PATH" \
+	    --data_dir="$$DATA_PATH"
+
 # ---------- Inference ----------
 
 infer:
@@ -56,6 +99,7 @@ infer:
 	MOUNT_CHECKPOINT_DIR=$$(dirname "$$CHECKPOINT_PATH"); \
 	MOUNT_INPUT_DIR=$$(dirname "$$INPUT_PATH"); \
 	docker run $(RUNTIME) --rm \
+	  --shm-size=$(SHM_SIZE) \
 	  -v "$$PWD:/app" \
 	  -v "$$MOUNT_CHECKPOINT_DIR:$$MOUNT_CHECKPOINT_DIR" \
 	  -v "$$MOUNT_INPUT_DIR:$$MOUNT_INPUT_DIR" \
@@ -67,27 +111,6 @@ infer:
 	    --output="$$OUTPUT_PATH" \
 	    --batch_size=$(or $(BATCH_SIZE),500) \
 	    --num_workers=$(or $(WORKERS),4)
-
-# ---------- Training ----------
-
-train:
-	@if [ -z "$(DATA_DIR)" ]; then \
-	  echo "[!] DATA_DIR is not set"; exit 1; \
-	fi; \
-	MOUNT_SRC="$(DATA_DIR)"; \
-	MOUNT_DEST="/app/data"; \
-	[ "$$(echo $(DATA_DIR) | cut -c1)" != "/" ] && MOUNT_SRC="$$PWD/$(DATA_DIR)"; \
-	echo "[•] Mounting $$MOUNT_SRC to $$MOUNT_DEST"; \
-	docker run $(RUNTIME) --rm \
-	  --shm-size=2g \
-	  -v "$$MOUNT_SRC:$$MOUNT_DEST" \
-	  -v "$$PWD:/app" \
-	  $(TAG) \
-	  python src/train.py \
-	    fit \
-	    --config /app/$(CONFIG) \
-	    --data.data_dir=$$MOUNT_DEST
-
 
 # ---------- Formatting ----------
 
