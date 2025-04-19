@@ -68,17 +68,17 @@ your-data-dir/
 ```
 
 ## Evaluate the Model:
-Compute metrics on a held-out (unseen) test set to approximate how well the model would perform on unseen data. It is recommended to evaluate the model before running inference.
+Compute metrics on a held-out (unseen) test set to approximate how well the model would perform on unseen data. It is recommended to evaluate the model before running inference. For the DATA_DIR, just give the absolute path to the root of your data, just like you did for model training. The evaluation uses the **your-data-dir/test** data.
 ```bash
-	make eval CHECKPOINT=my.ckpt DATA_DIR=my_test_data
+	make eval CHECKPOINT=my.ckpt DATA_DIR=your-data-dir
 ```
 - Force CPU
 ```bash
-	make eval CHECKPOINT=my.ckpt DATA_DIR=my_test_data USE_GPU=0   # Force CPU
+	make eval CHECKPOINT=my.ckpt DATA_DIR=your-data-dir USE_GPU=0   # Force CPU
 ```
 - Force GPU
 ```bash
-	make eval  CHECKPOINT=my.ckpt DATA_DIR=my_test_data USE_GPU=1   # Force GPU
+	make eval  CHECKPOINT=my.ckpt DATA_DIR=your-data-dir USE_GPU=1   # Force GPU
 ```
 
 ## Run Inference:
