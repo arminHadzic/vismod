@@ -67,23 +67,45 @@ your-data-dir/
 	make train DATA_DIR=your-data-dir
 ```
 
-## Run Inference:
-Run on 1 image or an entire directory:
+## Evaluate the Model:
+Compute metrics on a held-out (unseen) test set to approximate how well the model would perform on unseen data. It is recommended to evaluate the model before running inference.
 ```bash
-	make infer CHECKPOINT=my.ckpt INPUT=my_data BATCH=1000 WORKERS=16
-```
-### Optional Commands
-- Custom Output Directory
-```bash
-	make infer OUTPUT=my_dir # Custom output directory
+	make eval CHECKPOINT=my.ckpt DATA_DIR=my_test_data
 ```
 - Force CPU
 ```bash
-	make infer USE_GPU=0   # Force CPU
+	make eval CHECKPOINT=my.ckpt DATA_DIR=my_test_data USE_GPU=0   # Force CPU
 ```
 - Force GPU
 ```bash
-	make infer USE_GPU=1   # Force GPU
+	make eval  CHECKPOINT=my.ckpt DATA_DIR=my_test_data USE_GPU=1   # Force GPU
+```
+
+## Run Inference:
+Run on 1 image or an entire directory:
+```bash
+	make infer CHECKPOINT=my.ckpt INPUT=my_data
+```
+### Optional Commands
+- Custom output directory
+```bash
+	make infer CHECKPOINT=my.ckpt INPUT=my_data OUTPUT=my_dir # Custom output directory
+```
+- Force CPU
+```bash
+	make infer CHECKPOINT=my.ckpt INPUT=my_data USE_GPU=0   # Force CPU
+```
+- Force GPU
+```bash
+	make infer CHECKPOINT=my.ckpt INPUT=my_data USE_GPU=1   # Force GPU
+```
+- Set the number of entries per log partition.
+```bash
+	make infer CHECKPOINT=my.ckpt INPUT=my_data BATCH=1000
+```
+- Set the number of CPU workers used to run inference.
+```bash
+	make infer CHECKPOINT=my.ckpt INPUT=my_data WORKERS=16
 ```
 
 ## Shell into Container (GPU if Available):
