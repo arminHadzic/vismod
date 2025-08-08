@@ -9,7 +9,7 @@ CONFIG ?= configs/mod_classifier.yaml
 CHECKPOINT ?= checkpoints/model.ckpt
 INPUT ?= images_to_check
 BATCH ?= 1000
-WORKERS ?= 8
+WORKERS ?= 4
 SHM_SIZE ?= 1g
 
 # Default output directory with timestamp
@@ -44,12 +44,12 @@ run:
 
 train:
 	@if [ -z "$(DATA_DIR)" ]; then \
-	  echo "[!] DATA_DIR is not set"; exit 1; \
+	  echo "ERROR: DATA_DIR is not set"; exit 1; \
 	fi; \
 	MOUNT_SRC="$(DATA_DIR)"; \
 	MOUNT_DEST="/app/data"; \
 	[ "$$(echo $(DATA_DIR) | cut -c1)" != "/" ] && MOUNT_SRC="$$PWD/$(DATA_DIR)"; \
-	echo "[•] Mounting $$MOUNT_SRC to $$MOUNT_DEST"; \
+	echo "Mounting $$MOUNT_SRC to $$MOUNT_DEST"; \
 	docker run $(RUNTIME) --rm \
 	  --shm-size=$(SHM_SIZE) \
 	  -v "$$MOUNT_SRC:$$MOUNT_DEST" \
@@ -64,10 +64,11 @@ train:
 
 eval:
 	@if [ -z "$(CHECKPOINT)" ] || [ -z "$(DATA_DIR)" ]; then \
-	  echo "[!] CHECKPOINT and DATA_DIR must be specified"; exit 1; \
+	  echo "ERROR: CHECKPOINT and DATA_DIR must be specified"; exit 1; \
 	fi; \
 	CHECKPOINT_PATH="$(CHECKPOINT)"; \
 	DATA_PATH="$(DATA_DIR)"; \
+	LOG_FILE="$$PWD/eval_log.log"; \
 	[ "$$(echo $$CHECKPOINT_PATH | cut -c1)" != "/" ] && CHECKPOINT_PATH="$$PWD/$$CHECKPOINT_PATH"; \
 	[ "$$(echo $$DATA_PATH | cut -c1)" != "/" ] && DATA_PATH="$$PWD/$$DATA_PATH"; \
 	docker run $(RUNTIME) --rm \
@@ -78,24 +79,26 @@ eval:
 	  $(TAG) \
 	  python src/eval.py \
 	    --checkpoint="$$CHECKPOINT_PATH" \
-	    --data_dir="$$DATA_PATH"
+	    --data_dir="$$DATA_PATH" \
+	    --log_file="$$LOG_FILE"
 
 # ---------- Inference ----------
 
 infer:
 	@if [ -z "$(CHECKPOINT)" ] || [ -z "$(INPUT)" ]; then \
-	  echo "[!] CHECKPOINT and INPUT must be specified"; exit 1; \
+	  echo "ERROR: CHECKPOINT and INPUT must be specified"; exit 1; \
 	fi; \
 	CHECKPOINT_PATH="$(CHECKPOINT)"; \
 	INPUT_PATH="$(INPUT)"; \
 	OUTPUT_PATH="$(OUTPUT)"; \
+	LOG_FILE="$$(OUTPUT)/infer_log.log"; \
 	[ "$$(echo $(CHECKPOINT) | cut -c1)" != "/" ] && CHECKPOINT_PATH="$$PWD/$(CHECKPOINT)"; \
 	[ "$$(echo $(INPUT) | cut -c1)" != "/" ] && INPUT_PATH="$$PWD/$(INPUT)"; \
 	[ -z "$(OUTPUT)" ] && OUTPUT_PATH="inference_results_$$(date +%F_%H-%M-%S)"; \
 	[ "$$(echo $$OUTPUT_PATH | cut -c1)" != "/" ] && OUTPUT_PATH="$$PWD/$$OUTPUT_PATH"; \
-	echo "[•] Using checkpoint: $$CHECKPOINT_PATH"; \
-	echo "[•] Reading images from: $$INPUT_PATH"; \
-	echo "[•] Saving results to: $$OUTPUT_PATH"; \
+	echo "Using checkpoint: $$CHECKPOINT_PATH"; \
+	echo "Reading images from: $$INPUT_PATH"; \
+	echo "Saving results to: $$OUTPUT_PATH"; \
 	MOUNT_CHECKPOINT_DIR=$$(dirname "$$CHECKPOINT_PATH"); \
 	MOUNT_INPUT_DIR=$$(dirname "$$INPUT_PATH"); \
 	docker run $(RUNTIME) --rm \
@@ -110,7 +113,8 @@ infer:
 	    --input="$$INPUT_PATH" \
 	    --output="$$OUTPUT_PATH" \
 	    --batch_size=$(or $(BATCH_SIZE),500) \
-	    --num_workers=$(or $(WORKERS),4)
+	    --num_workers=$(or $(WORKERS),4) \
+	    --log_file="$$LOG_FILE"
 
 # ---------- Formatting ----------
 
@@ -121,9 +125,9 @@ format:
 	elif docker images -q vismod:gpu > /dev/null; then \
 	  IMAGE=vismod:gpu; \
 	else \
-	  echo "[✘] Neither vismod:cpu nor vismod:gpu image found."; exit 1; \
+	  echo "ERROR: Neither vismod:cpu nor vismod:gpu image found."; exit 1; \
 	fi; \
-	echo "[•] Using image: $$IMAGE"; \
+	echo "Using image: $$IMAGE"; \
 	docker run --rm -v "$$PWD:/app" $$IMAGE yapf -ir /app/src
 
 

@@ -1,9 +1,12 @@
+import logging
 from pathlib import Path
 
 import torch
 import lightning.pytorch as pl
 from torch.utils.data import DataLoader
 from torchvision import transforms, datasets
+
+logger = logging.getLogger(__name__)
 
 
 class ImageDataModule(pl.LightningDataModule):
@@ -36,9 +39,9 @@ class ImageDataModule(pl.LightningDataModule):
     test_path = self.data_dir / "test"
 
     if not train_path.exists():
-      raise FileNotFoundError(f"[✘] Training folder not found: {train_path}")
+      raise FileNotFoundError(f"Training folder not found: {train_path}")
 
-    print(f"[✓] Using training data from: {train_path}")
+    logger.info(f"Using training data from: {train_path}")
 
     self.train_dataset = datasets.ImageFolder(train_path, transform=self.transform)
 
@@ -47,7 +50,7 @@ class ImageDataModule(pl.LightningDataModule):
     elif test_path.exists():
       self.val_dataset = datasets.ImageFolder(test_path, transform=self.transform)
     else:
-      print("[!] Validation folder not found — using training data as val split")
+      logger.info("Validation folder not found — using training data as val split.")
       val_size = int(0.2 * len(self.train_dataset))
       train_size = len(self.train_dataset) - val_size
       self.train_dataset, self.val_dataset = torch.utils.data.random_split(
@@ -56,7 +59,7 @@ class ImageDataModule(pl.LightningDataModule):
     if test_path.exists():
       self.test_dataset = datasets.ImageFolder(test_path, transform=self.transform)
     else:
-      print("[!] Test folder not found — skipping test set")
+      logger.info("Test folder not found — skipping test set.")
       self.test_dataset = None
 
   def train_dataloader(self):

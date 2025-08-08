@@ -1,15 +1,20 @@
-import os
-import sys
+import time
+import logging
 import numpy as np
 import pandas as pd
 import imageio.v3 as iio
 from pathlib import Path
+from functools import partial
+from concurrent.futures import ProcessPoolExecutor
 
 import torch
 from torchvision import transforms
 from lightning.pytorch import LightningModule
 
+from utils import setup_logging
 from model import ModClassifier
+
+logger = logging.getLogger(__name__)
 
 
 def load_image(path, image_size=224):
@@ -32,16 +37,12 @@ def load_image(path, image_size=224):
   return transform(img).unsqueeze(0)
 
 
-def setup_model(checkpoint_path: Path = None,
-                device: str = "cpu",
-                verbose: bool = False) -> LightningModule:
+def setup_model(checkpoint_path: Path = None, device: str = "cpu") -> LightningModule:
   if checkpoint_path:
-    if verbose:
-      print(f"[•] Loading checkpoint: {checkpoint_path}")
+    logger.info(f"Loading checkpoint: {checkpoint_path}")
     model = ModClassifier.load_from_checkpoint(checkpoint_path)
   else:
-    if verbose:
-      print("[•] No checkpoint provided. Using base pretrained ConvNeXtV2 model.")
+    logger.info("No checkpoint provided. Using base pretrained ConvNeXtV2 model.")
     model = ModClassifier()  # Loads with default model_name from constructor
   model.eval()
   model.freeze()
@@ -64,9 +65,6 @@ def predict_single(image_path: Path, checkpoint_path: Path, threshold: float = 0
 
 
 def run_parallel_inference(image_paths, checkpoint_path, threshold=0.5, num_workers=4):
-  from functools import partial
-  from concurrent.futures import ProcessPoolExecutor
-
   fn = partial(predict_single, checkpoint_path=checkpoint_path, threshold=threshold)
   with ProcessPoolExecutor(max_workers=num_workers) as executor:
     return list(executor.map(fn, image_paths))
@@ -88,7 +86,7 @@ def get_already_processed_filenames(output_dir: Path) -> set:
 def write_partition(df: pd.DataFrame, output_dir: Path, part_index: int):
   output_path = output_dir / f"part_{part_index:05d}.parquet"
   df.to_parquet(output_path, index=False)
-  print(f"[✓] Wrote {len(df)} rows to {output_path}")
+  logger.info(f"Wrote {len(df)} rows to {output_path}")
 
 
 def main(checkpoint_path: str,
@@ -96,41 +94,49 @@ def main(checkpoint_path: str,
          output_dir: str = "inference_results",
          threshold: float = 0.5,
          num_workers: int = 4,
-         batch_size: int = 1000):
+         batch_size: int = 1000,
+         log_file: str | None = None):
+
+  setup_logging(log_file)
+
   input_path = Path(input_path)
-  checkpoint_path = Path(checkpoint_path)
+  checkpoint_path = Path(checkpoint_path) if checkpoint_path != None else None
   output_dir = Path(output_dir)
   output_dir.mkdir(parents=True, exist_ok=True)
 
   processed_files = get_already_processed_filenames(output_dir)
-  print(f"[•] Found {len(processed_files)} previously processed files")
+  logger.info(f"Found {len(processed_files)} previously processed files")
 
   if input_path.is_file():
     if str(input_path) in processed_files:
-      print(f"[✓] Skipping already processed: {input_path.name}")
+      logger.info(f"Skipping already processed: {input_path.name}")
       return
+
     new_result = predict_single(input_path, checkpoint_path, threshold)
     write_partition(pd.DataFrame([new_result]), output_dir, 0)
     return
 
   if not input_path.is_dir():
-    print(f"[!] Invalid input path: {input_path}")
+    logger.error(f"Invalid input path: {input_path}")
     return
 
   image_files = (
-      Path(entry.path) for entry in os.scandir(input_path)
-      if entry.is_file() and Path(entry.name).suffix.lower() in {".jpg", ".jpeg", ".png"})
-  to_process = [f for f in image_files if str(f) not in processed_files]
+      p for p in Path(input_path).iterdir()
+      if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png"})
+  to_process = [p for p in image_files if str(p) not in processed_files]
 
   if not to_process:
-    print("[✓] All images already processed.")
+    logger.info("All images already processed.")
     return
 
-  print(f"[•] Processing {len(to_process)} images...")
+  logger.info(f"Processing {len(to_process)} images.")
 
   for i in range(0, len(to_process), batch_size):
     batch = to_process[i:i + batch_size]
+    t0 = time.time()
     results = run_parallel_inference(batch, checkpoint_path, threshold, num_workers)
+    dt = time.time() - t0
+    logger.info(f"Batch {i // batch_size} processed in {dt:.2f}.")
     df = pd.DataFrame(results)
     write_partition(df, output_dir, i // batch_size)
 
@@ -148,6 +154,8 @@ if __name__ == "__main__":
   parser.add_argument("--num_workers", type=int, default=4, help="Number of parallel workers")
   parser.add_argument(
       "--batch_size", type=int, default=1000, help="Number of images per output file")
+  parser.add_argument("--log_file", type=str, default=None, help="Optional log file path")
 
   args = parser.parse_args()
-  main(args.checkpoint, args.input, args.output, args.threshold, args.num_workers, args.batch_size)
+  main(args.checkpoint, args.input, args.output, args.threshold, args.num_workers, args.batch_size,
+       args.log_file)

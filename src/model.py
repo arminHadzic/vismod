@@ -1,10 +1,13 @@
 import timm
+import logging
 
 import torch
 import torch.nn as nn
 import lightning.pytorch as pl
 import torch.nn.functional as F
 from torchmetrics.classification import BinaryAccuracy, BinaryAUROC, BinaryF1Score
+
+logger = logging.getLogger(__name__)
 
 
 class ModClassifier(pl.LightningModule):
@@ -13,6 +16,7 @@ class ModClassifier(pl.LightningModule):
     super().__init__()
     self.save_hyperparameters()
 
+    logger.info(f"Initializing model {model_name}")
     self.model = timm.create_model(
         model_name,
         pretrained=True,
