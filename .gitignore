@@ -1,0 +1,15 @@
+scripts/*
+data/*
+lightning_logs/*
+inference*
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.ckpt
+*.csv
+.vscode/
+.idea/
+.env
+scripts/
+data/

@@ -1,0 +1,24 @@
+# Use the official PyTorch image with CUDA 12.4 and cuDNN 9
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+# Set the working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    git \
+    wget \
+    curl \
+    libglib2.0-0 \
+    libgl1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and source code
+COPY requirements.txt .
+COPY src/ ./src
+COPY configs/ ./configs
+
+# Install Python packages
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
