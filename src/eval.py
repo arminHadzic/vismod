@@ -40,6 +40,72 @@ def save_pr_curve(probs: torch.Tensor, labels: torch.Tensor, out_path: Path, ap_
   return out_path
 
 
+def render_perf_section(best_thr: float,
+                        acc: float,
+                        prec: float,
+                        rec: float,
+                        f1: float,
+                        auc: float,
+                        ap: float,
+                        pr_curve_relpath: str = "assets/pr_curve.png") -> str:
+  """
+  Returns a README-ready section with:
+    - a linked PR curve image
+    - a styled HTML table (GitHub-friendly)
+    - a collapsible Markdown fallback table
+  """
+
+  def f3(x: float) -> str:  # uniform number formatting
+    return f"{x:.3f}"
+
+  html_table = f"""
+    <!-- HTML table for rich rendering -->
+    <table style="border-collapse:collapse; width:420px;">
+      <thead>
+        <tr>
+          <th style="text-align:left; padding:6px 10px; border-bottom:1px solid #ddd;">Metric</th>
+          <th style="text-align:right; padding:6px 10px; border-bottom:1px solid #ddd;">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:6px 10px;">Best threshold (P(Not))</td><td style="text-align:right; padding:6px 10px;"><b>{f3(best_thr)}</b></td></tr>
+        <tr><td style="padding:6px 10px;">Accuracy</td><td style="text-align:right; padding:6px 10px;">{f3(acc)}</td></tr>
+        <tr><td style="padding:6px 10px;">Precision</td><td style="text-align:right; padding:6px 10px;">{f3(prec)}</td></tr>
+        <tr><td style="padding:6px 10px;">Recall</td><td style="text-align:right; padding:6px 10px;">{f3(rec)}</td></tr>
+        <tr><td style="padding:6px 10px;">F1</td><td style="text-align:right; padding:6px 10px;">{f3(f1)}</td></tr>
+        <tr><td style="padding:6px 10px;">AUC (ROC)</td><td style="text-align:right; padding:6px 10px;">{f3(auc)}</td></tr>
+        <tr><td style="padding:6px 10px;">Average Precision (PR)</td><td style="text-align:right; padding:6px 10px;">{f3(ap)}</td></tr>
+      </tbody>
+    </table>
+    """.strip()
+
+  md_table = f"""
+    <!-- Markdown fallback table (for renderers that ignore HTML) -->
+    | **Metric**                | **Value** |
+    |:--------------------------|----------:|
+    | Best threshold *(P(Not))* | **{f3(best_thr)}** |
+    | Accuracy                  | {f3(acc)} |
+    | Precision                 | {f3(prec)} |
+    | Recall                    | {f3(rec)} |
+    | F1                        | {f3(f1)} |
+    | AUC (ROC)                 | {f3(auc)} |
+    | Average Precision (PR)    | {f3(ap)} |
+    """.strip()
+
+  md = f"""### Model Performance
+    ![PR Curve]({pr_curve_relpath})
+
+    {html_table}
+
+    <details>
+    <summary>Markdown table (fallback)</summary>
+
+    {md_table}
+    </details>
+    """.rstrip()
+  return md
+
+
 def update_readme_performance(md_block: str,
                               repo_dir: Path,
                               start_marker: str = "<!-- PERF:START -->",
@@ -144,13 +210,12 @@ def evaluate(checkpoint_path: str,
   else:
     df.to_csv(results_path, index=False)
 
-  if not make_report:
-    return
-  else:
-    logger.info(f"Making report.")
-
   # OPTIONAL: Generate report to get into the README.md
   # --------- Report: PR curve + README table (best-F1 threshold) ----------
+  if not make_report:
+    return
+
+  logger.info("Making report")
   repo_dir = Path.cwd() if repo_dir == None else Path(repo_dir)
   assets_dir = repo_dir / "assets"
   assets_dir.mkdir(parents=True, exist_ok=True)
@@ -172,18 +237,17 @@ def evaluate(checkpoint_path: str,
   rec_b = BinaryRecall()(preds_best, labels).item()
   f1_b = BinaryF1Score()(preds_best, labels).item()
 
-  md = f"""### Model Performance
+  md = render_perf_section(
+      best_thr=best_thr,
+      acc=acc_b,
+      prec=prec_b,
+      rec=rec_b,
+      f1=f1_b,
+      auc=auc_val,
+      ap=ap_val,
+      pr_curve_relpath="assets/pr_curve.png",
+  )
 
-    | Metric | Value |
-    |---|---|
-    | Best threshold (P(Not)) | {best_thr:.3f} |
-    | Accuracy | {acc_b:.3f} |
-    | Precision | {prec_b:.3f} |
-    | Recall | {rec_b:.3f} |
-    | F1 | {f1_b:.3f} |
-    | AUC (ROC) | {auc_val:.3f} |
-    | Average Precision (PR) | {ap_val:.3f} |
-  """
   update_readme_performance(md, repo_dir)
 
 
