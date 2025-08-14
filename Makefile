@@ -8,7 +8,6 @@ DATA_DIR ?= data
 CONFIG ?= configs/mod_classifier.yaml
 CHECKPOINT ?= checkpoints/model.ckpt
 INPUT ?= images_to_check
-BATCH ?= 1000
 WORKERS ?= 4
 SHM_SIZE ?= 1g
 
@@ -24,6 +23,13 @@ USE_GPU ?= $(GPU_AVAILABLE)
 # Select image and runtime
 TAG := $(if $(filter 1,$(USE_GPU)),$(GPU_TAG),$(CPU_TAG))
 RUNTIME := $(if $(filter 1,$(USE_GPU)),--gpus all,)
+
+# Logging verbosity
+VERBOSE ?= 0
+LOG_LEVEL := $(if $(filter 1,$(VERBOSE)),INFO,WARNING)
+
+.ONESHELL:
+SHELL := /bin/bash
 
 # ---------- Docker Build ----------
 
@@ -58,31 +64,57 @@ train:
 	  python src/train.py \
 	    fit \
 	    --config /app/$(CONFIG) \
-	    --data.data_dir=$$MOUNT_DEST
+	    --data.data_dir=$$MOUNT_DEST \
+	    --log_level="$(LOG_LEVEL)"
 
 # ---------- Evaluate ----------
 
+REPORT ?= 0 # 1 = generate PR curve + README table
+EVAL_BATCH_SIZE ?= 10
+
 eval:
-	@if [ -z "$(CHECKPOINT)" ] || [ -z "$(DATA_DIR)" ]; then \
-	  echo "ERROR: CHECKPOINT and DATA_DIR must be specified"; exit 1; \
-	fi; \
-	CHECKPOINT_PATH="$(CHECKPOINT)"; \
-	DATA_PATH="$(DATA_DIR)"; \
-	LOG_FILE="$$PWD/eval_log.log"; \
-	[ "$$(echo $$CHECKPOINT_PATH | cut -c1)" != "/" ] && CHECKPOINT_PATH="$$PWD/$$CHECKPOINT_PATH"; \
-	[ "$$(echo $$DATA_PATH | cut -c1)" != "/" ] && DATA_PATH="$$PWD/$$DATA_PATH"; \
-	docker run $(RUNTIME) --rm \
-	  --shm-size=$(SHM_SIZE) \
+	@set -euo pipefail
+	if [[ -z "$(CHECKPOINT)" || -z "$(DATA_DIR)" ]]; then
+	  echo "ERROR: CHECKPOINT and DATA_DIR must be specified"; exit 1;
+	fi
+
+	# Normalize to absolute paths on host
+	CKPT="$(CHECKPOINT)"; DATA="$(DATA_DIR)"
+	case "$$CKPT" in /*) ;; *) CKPT="$$PWD/$$CKPT" ;; esac
+	case "$$DATA" in /*) ;; *) DATA="$$PWD/$$DATA" ;; esac
+
+	# Container-local paths
+	LOG_FILE_C="/app/eval_log.log"
+	REPO_DIR_C="/app"
+
+	# Optional report flags
+	EXTRA=""
+	if [[ "$(REPORT)" == "1" ]]; then
+	  EXTRA="--make_report --repo_dir=$$REPO_DIR_C"
+	fi
+
+	# Mount dirs (checkpoint dir may be outside repo)
+	DIR_CKPT="$$(dirname "$$CKPT")"
+
+	docker run $(RUNTIME) --rm --shm-size=$(SHM_SIZE) \
 	  -v "$$PWD:/app" \
-	  -v "$$(dirname $$CHECKPOINT_PATH):$$(dirname $$CHECKPOINT_PATH)" \
-	  -v "$$DATA_PATH:$$DATA_PATH" \
+	  -v "$$DIR_CKPT:$$DIR_CKPT" \
+	  -v "$$DATA:$$DATA" \
 	  $(TAG) \
 	  python src/eval.py \
-	    --checkpoint="$$CHECKPOINT_PATH" \
-	    --data_dir="$$DATA_PATH" \
-	    --log_file="$$LOG_FILE"
+	    --checkpoint="$$CKPT" \
+	    --data_dir="$$DATA" \
+	    --batch_size=$(EVAL_BATCH_SIZE) \
+	    --num_workers=$(WORKERS) \
+	    --log_file="$$LOG_FILE_C" \
+	    --log_level="$(LOG_LEVEL)" \
+	    $$EXTRA
+
+
 
 # ---------- Inference ----------
+
+SAMPLES_PER_FILE ?= 1000
 
 infer:
 	@if [ -z "$(CHECKPOINT)" ] || [ -z "$(INPUT)" ]; then \
@@ -112,9 +144,23 @@ infer:
 	    --checkpoint="$$CHECKPOINT_PATH" \
 	    --input="$$INPUT_PATH" \
 	    --output="$$OUTPUT_PATH" \
-	    --batch_size=$(or $(BATCH_SIZE),500) \
+	    --samples_per_file=$(or $(SAMPLES_PER_FILE),500) \
 	    --num_workers=$(or $(WORKERS),4) \
-	    --log_file="$$LOG_FILE"
+	    --log_file="$$LOG_FILE" \
+	    --log_level="$(LOG_LEVEL)"
+
+
+# ---------- Notebooks ----------
+
+NB_PORT ?= 8888
+
+notebook:
+	docker run $(RUNTIME) --rm --shm-size=$(SHM_SIZE) \
+	  -p $(NB_PORT):8888 \
+	  -v "$$PWD:/app" \
+	  $(TAG) \
+	  bash -lc 'jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token="" --NotebookApp.password=""'
+
 
 # ---------- Formatting ----------
 
@@ -129,6 +175,26 @@ format:
 	fi; \
 	echo "Using image: $$IMAGE"; \
 	docker run --rm -v "$$PWD:/app" $$IMAGE yapf -ir /app/src
+		docker run --rm -v "$$PWD:/app" $$IMAGE yapf -ir /app/scripts
+
+
+# ---------- Make Demo Dataset ----------
+
+build-dataset:
+	@if [ -z "$(DATA_DIR)" ]; then \
+	  echo "ERROR: DATA_DIR is not set"; exit 1; \
+	fi; \
+	MOUNT_SRC="$(DATA_DIR)"; \
+	MOUNT_DEST="/app/data"; \
+	[ "$$(echo $(DATA_DIR) | cut -c1)" != "/" ] && MOUNT_SRC="$$PWD/$(DATA_DIR)"; \
+	echo "Mounting $$MOUNT_SRC to $$MOUNT_DEST"; \
+	docker run $(RUNTIME) --rm \
+	  --shm-size=$(SHM_SIZE) \
+	  -v "$$MOUNT_SRC:$$MOUNT_DEST" \
+	  -v "$$PWD:/app" \
+	  $(TAG) \
+	  python scripts/prepare_imagenette.py \
+	    --out=$$MOUNT_DEST
 
 
 # ---------- Cleanup ----------

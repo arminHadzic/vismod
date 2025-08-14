@@ -56,11 +56,11 @@ def predict_single(image_path: Path, checkpoint_path: Path, threshold: float = 0
   image_tensor = load_image(image_path).to(device)
   logits = model(image_tensor).squeeze()
   prob = torch.sigmoid(logits).item()
-  label = "Not" if prob > threshold else "Safe"
+  pred_class = "Safe" if prob > threshold else "Not"
   return {
       "filename": str(image_path),
       "probability": prob,
-      "label": label,
+      "pred_class": pred_class,
   }
 
 
@@ -94,10 +94,11 @@ def main(checkpoint_path: str,
          output_dir: str = "inference_results",
          threshold: float = 0.5,
          num_workers: int = 4,
-         batch_size: int = 1000,
-         log_file: str | None = None):
+         samples_per_file: int = 1000,
+         log_file: str | None = None,
+         log_level: str = "INFO"):
 
-  setup_logging(log_file)
+  setup_logging(log_file, log_level)
 
   input_path = Path(input_path)
   checkpoint_path = Path(checkpoint_path) if checkpoint_path != None else None
@@ -121,7 +122,7 @@ def main(checkpoint_path: str,
     return
 
   image_files = (
-      p for p in Path(input_path).iterdir()
+      p for p in Path(input_path).rglob("*")
       if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png"})
   to_process = [p for p in image_files if str(p) not in processed_files]
 
@@ -131,14 +132,14 @@ def main(checkpoint_path: str,
 
   logger.info(f"Processing {len(to_process)} images.")
 
-  for i in range(0, len(to_process), batch_size):
-    batch = to_process[i:i + batch_size]
+  for i in range(0, len(to_process), samples_per_file):
+    batch = to_process[i:i + samples_per_file]
     t0 = time.time()
     results = run_parallel_inference(batch, checkpoint_path, threshold, num_workers)
     dt = time.time() - t0
-    logger.info(f"Batch {i // batch_size} processed in {dt:.2f}.")
+    logger.info(f"Batch {i // samples_per_file} processed in {dt:.2f}.")
     df = pd.DataFrame(results)
-    write_partition(df, output_dir, i // batch_size)
+    write_partition(df, output_dir, i // samples_per_file)
 
 
 if __name__ == "__main__":
@@ -153,9 +154,10 @@ if __name__ == "__main__":
   parser.add_argument("--threshold", type=float, default=0.5, help="Classification threshold")
   parser.add_argument("--num_workers", type=int, default=4, help="Number of parallel workers")
   parser.add_argument(
-      "--batch_size", type=int, default=1000, help="Number of images per output file")
+      "--samples_per_file", type=int, default=1000, help="Number of images per output file")
   parser.add_argument("--log_file", type=str, default=None, help="Optional log file path")
+  parser.add_argument("--log_level", default="INFO")
 
   args = parser.parse_args()
-  main(args.checkpoint, args.input, args.output, args.threshold, args.num_workers, args.batch_size,
-       args.log_file)
+  main(args.checkpoint, args.input, args.output, args.threshold, args.num_workers,
+       args.samples_per_file, args.log_file, args.log_level)

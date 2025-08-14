@@ -1,4 +1,4 @@
-scripts/*
+attic/*
 data/*
 lightning_logs/*
 inference*
@@ -11,5 +11,5 @@ __pycache__/
 .vscode/
 .idea/
 .env
-scripts/
 data/
+attic/

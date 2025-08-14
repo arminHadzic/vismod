@@ -1,4 +1,5 @@
 # VisMod
+![PR Curve](assets/examples.png)
 Vismod is a neural network–powered tool designed to automatically moderate visual content, ensuring image data is appropriate for general audiences. Designed for speed and scalability, it helps businesses automate content safety using modern computer vision techniques.
 
 # How To
@@ -29,7 +30,11 @@ Choose whether to run with a CPU or GPU, then build the docker container from th
 ```
 
 ## Train the Model:
-1. Structure your data in this manner:
+1. Configure the model to your liking:
+```
+configs/mod_classifier.yaml
+```
+2. Structure your data in this manner:
 ```
 your-data-dir/
 	├── train/
@@ -42,7 +47,7 @@ your-data-dir/
 	    ├── safe/
 	    └── not/
 ```
-2. Run a training job:
+3. Run a training job:
 ```bash
 	make train
 ```
@@ -79,36 +84,88 @@ Compute metrics on a held-out (unseen) test set to approximate how well the mode
 ```bash
 	make eval  CHECKPOINT=my.ckpt DATA_DIR=your-data-dir USE_GPU=1   # Force GPU
 ```
+- Populate the README.md with the latest evaluation results:
+```bash
+	make eval USE_GPU=1 REPORT=1 \
+		CHECKPOINT=weights/default.ckpt \
+  		DATA_DIR=data
+```
 
 ## Run Inference:
-Run on 1 image or an entire directory:
+- Run on 1 image or an entire directory:
 ```bash
-	make infer CHECKPOINT=my.ckpt INPUT=my_data
+	make infer CHECKPOINT=my.ckpt INPUT=my_data/test
 ```
 ### Optional Commands
 - Custom output directory
 ```bash
-	make infer CHECKPOINT=my.ckpt INPUT=my_data OUTPUT=my_dir	# Custom output directory
+	make infer CHECKPOINT=my.ckpt INPUT=my_data/test OUTPUT=my_dir	# Custom output directory
 ```
 - Force CPU
 ```bash
-	make infer CHECKPOINT=my.ckpt INPUT=my_data USE_GPU=0   # Force CPU
+	make infer CHECKPOINT=my.ckpt INPUT=my_data/test USE_GPU=0   # Force CPU
 ```
 - Force GPU
 ```bash
-	make infer CHECKPOINT=my.ckpt INPUT=my_data USE_GPU=1   # Force GPU
+	make infer CHECKPOINT=my.ckpt INPUT=my_data/test USE_GPU=1   # Force GPU
 ```
 - Set the number of entries per log partition.
 ```bash
-	make infer CHECKPOINT=my.ckpt INPUT=my_data BATCH=1000
+	make infer CHECKPOINT=my.ckpt INPUT=my_data/test SAMPLES_PER_FILE=1000
 ```
 - Set the number of CPU workers used to run inference.
 ```bash
-	make infer CHECKPOINT=my.ckpt INPUT=my_data WORKERS=16
+	make infer CHECKPOINT=my.ckpt INPUT=my_data/test WORKERS=16
 ```
 
 ## Miscellaneous:
-To re-lint the code:
+- To re-lint the code:
 ```bash
 	make format		# format with yapf (2-space config)
 ```
+- Make example dataset using imagenette:
+```bash
+	make build-dataset DATA_DIR=my_data
+```
+- See runtime information:
+```bash
+	make {train/infer/eval} VERBOSE=1 ...
+```
+
+## Visualize Results:
+- Run Jupyter Notebook (GPU)
+```bash
+	make notebook 
+```
+Access the notebook in your web browser at: ```http://localhost:8888/lab?```
+- Force CPU
+```bash
+	make notebook USE_GPU=0   # Force CPU
+```
+- Force GPU
+```bash
+	make notebook USE_GPU=1   # Force GPU
+```
+
+## Example Results:
+
+![PR Curve](assets/pr_curve.png)
+
+<!-- PERF:START -->
+### Model Performance
+
+    | Metric | Value |
+    |---|---|
+    | Best threshold (P(Not)) | 0.320 |
+    | Accuracy | 0.990 |
+    | Precision | 0.988 |
+    | Recall | 1.000 |
+    | F1 | 0.994 |
+    | AUC (ROC) | 1.000 |
+    | Average Precision (PR) | 1.000 |
+<!-- PERF:END -->
+
+
+
+
+
