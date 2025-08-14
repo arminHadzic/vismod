@@ -2,6 +2,7 @@ attic/*
 data/*
 lightning_logs/*
 inference*
+*/.ipynb_checkpoints/*
 __pycache__/
 *.pyc
 *.pyo
