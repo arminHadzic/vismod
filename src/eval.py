@@ -48,7 +48,7 @@ def render_perf_section(best_thr: float,
                         auc: float,
                         ap: float,
                         pr_curve_relpath: str = "assets/pr_curve.png",
-                        include_fallback: bool = True) -> str:
+                        include_fallback: bool = False) -> str:
 
   def f3(x: float) -> str:
     return f"{x:.3f}"
