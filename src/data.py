@@ -3,8 +3,10 @@ from pathlib import Path
 
 import torch
 import lightning.pytorch as pl
+from torchvision import datasets
 from torch.utils.data import DataLoader
-from torchvision import transforms, datasets
+
+from utils import get_image_transform
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +27,7 @@ class ImageDataModule(pl.LightningDataModule):
     self.num_workers = num_workers
     self.save_hyperparameters(ignore=["data_dir"])  # Optional: avoids Path serialization issues
 
-    self.transform = transforms.Compose([
-        transforms.Resize((image_size, image_size)),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],  # ImageNet
-            std=[0.229, 0.224, 0.225]),
-    ])
+    self.transform = get_image_transform(image_size)
 
   def setup(self, stage=None):
     train_path = self.data_dir / "train"

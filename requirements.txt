@@ -15,5 +15,10 @@ imageio>=2.34
 pandas>=2.0
 pyarrow>=14.0
 
+# Notebooks & visualization
+scikit-learn>=1.7.1
+jupyterlab>=4.4
+matplotlib>=3.10
+
 # CLI and formatting tools
 yapf>=0.40
