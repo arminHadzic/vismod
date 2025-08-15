@@ -3,6 +3,7 @@ import logging
 import argparse
 import pandas as pd
 from pathlib import Path
+from textwrap import dedent
 import matplotlib.pyplot as plt
 
 import torch
@@ -58,7 +59,7 @@ def render_perf_section(best_thr: float,
   def f3(x: float) -> str:  # uniform number formatting
     return f"{x:.3f}"
 
-  html_table = f"""
+  html_table = dedent(f"""
     <!-- HTML table for rich rendering -->
     <table style="border-collapse:collapse; width:420px;">
       <thead>
@@ -77,9 +78,9 @@ def render_perf_section(best_thr: float,
         <tr><td style="padding:6px 10px;">Average Precision (PR)</td><td style="text-align:right; padding:6px 10px;">{f3(ap)}</td></tr>
       </tbody>
     </table>
-    """.strip()
+    """).strip()
 
-  md_table = f"""
+  md_table = dedent(f"""
     <!-- Markdown fallback table (for renderers that ignore HTML) -->
     | **Metric**                | **Value** |
     |:--------------------------|----------:|
@@ -90,9 +91,9 @@ def render_perf_section(best_thr: float,
     | F1                        | {f3(f1)} |
     | AUC (ROC)                 | {f3(auc)} |
     | Average Precision (PR)    | {f3(ap)} |
-    """.strip()
+    """).strip()
 
-  md = f"""### Model Performance
+  md = dedent(f"""### Model Performance
     ![PR Curve]({pr_curve_relpath})
 
     {html_table}
@@ -102,7 +103,7 @@ def render_perf_section(best_thr: float,
 
     {md_table}
     </details>
-    """.rstrip()
+    """).rstrip()
   return md
 
 
