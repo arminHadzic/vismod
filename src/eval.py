@@ -115,17 +115,19 @@ def update_readme_performance(md_block: str,
   readme = repo_dir / "README.md"
   readme.parent.mkdir(parents=True, exist_ok=True)
 
+  block_clean = md_block.lstrip()
   header = f"{start_marker}\n"
-  footer = f"\n{end_marker}\n"
-  block = header + md_block.rstrip() + footer
+  footer = f"\n{end_marker}"
+  block = f"\n{header}{block_clean}\n{footer}\n"
 
   if readme.exists():
     text = readme.read_text(encoding="utf-8")
-    pattern = re.compile(re.escape(start_marker) + r".*?" + re.escape(end_marker), flags=re.DOTALL)
-    new_text = pattern.sub(block, text) if pattern.search(text) else (
-        text + ("\n\n" if not text.endswith("\n") else "") + block)
+    # replace even if the old block had extra indentation/newlines
+    pattern = re.compile(rf"{re.escape(start_marker)}.*?{re.escape(end_marker)}", re.DOTALL)
+    new_text = pattern.sub(block.strip("\n"),
+                           text) if pattern.search(text) else (text.rstrip("\n") + block)
   else:
-    new_text = "# vismod\n\n" + block
+    new_text = f"# vismod\n{block}"
 
   readme.write_text(new_text, encoding="utf-8")
   logger.info(f"Updated README: {readme}")
