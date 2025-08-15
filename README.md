@@ -162,7 +162,7 @@ Access the notebook in your web browser at: ```http://localhost:8888/lab?```
 </tr>
 </thead>
 <tbody>
-<tr><td style="padding:6px 10px;">Best threshold (P(Not))</td><td style="text-align:right; padding:6px 10px;"><b>0.320</b></td></tr>
+<tr><td style="padding:6px 10px;">Best threshold (P(Safe))</td><td style="text-align:right; padding:6px 10px;"><b>0.320</b></td></tr>
 <tr><td style="padding:6px 10px;">Accuracy</td><td style="text-align:right; padding:6px 10px;">0.990</td></tr>
 <tr><td style="padding:6px 10px;">Precision</td><td style="text-align:right; padding:6px 10px;">0.988</td></tr>
 <tr><td style="padding:6px 10px;">Recall</td><td style="text-align:right; padding:6px 10px;">1.000</td></tr>

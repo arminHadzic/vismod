@@ -62,7 +62,7 @@ def render_perf_section(best_thr: float,
     </tr>
   </thead>
   <tbody>
-    <tr><td style="padding:6px 10px;">Best threshold (P(Not))</td><td style="text-align:right; padding:6px 10px;"><b>{f3(best_thr)}</b></td></tr>
+    <tr><td style="padding:6px 10px;">Best threshold (P(Safe))</td><td style="text-align:right; padding:6px 10px;"><b>{f3(best_thr)}</b></td></tr>
     <tr><td style="padding:6px 10px;">Accuracy</td><td style="text-align:right; padding:6px 10px;">{f3(acc)}</td></tr>
     <tr><td style="padding:6px 10px;">Precision</td><td style="text-align:right; padding:6px 10px;">{f3(prec)}</td></tr>
     <tr><td style="padding:6px 10px;">Recall</td><td style="text-align:right; padding:6px 10px;">{f3(rec)}</td></tr>
@@ -75,7 +75,7 @@ def render_perf_section(best_thr: float,
   md_table = (f"""<!-- Markdown fallback table (for renderers that ignore HTML) -->
 | **Metric**                | **Value** |
 |:--------------------------|----------:|
-| Best threshold *(P(Not))* | **{f3(best_thr)}** |
+| Best threshold *(P(Safe))* | **{f3(best_thr)}** |
 | Accuracy                  | {f3(acc)} |
 | Precision                 | {f3(prec)} |
 | Recall                    | {f3(rec)} |
