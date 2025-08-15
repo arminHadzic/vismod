@@ -150,31 +150,32 @@ Access the notebook in your web browser at: ```http://localhost:8888/lab?```
 ## Example Results:
 <!-- PERF:START -->
 ### Model Performance
-    ![PR Curve](assets/pr_curve.png)
 
-    <!-- HTML table for rich rendering -->
+![PR Curve](assets/pr_curve.png)
+
+<!-- HTML table for rich rendering -->
 <table style="border-collapse:collapse; width:420px;">
-  <thead>
-    <tr>
-      <th style="text-align:left; padding:6px 10px; border-bottom:1px solid #ddd;">Metric</th>
-      <th style="text-align:right; padding:6px 10px; border-bottom:1px solid #ddd;">Value</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td style="padding:6px 10px;">Best threshold (P(Not))</td><td style="text-align:right; padding:6px 10px;"><b>0.320</b></td></tr>
-    <tr><td style="padding:6px 10px;">Accuracy</td><td style="text-align:right; padding:6px 10px;">0.990</td></tr>
-    <tr><td style="padding:6px 10px;">Precision</td><td style="text-align:right; padding:6px 10px;">0.988</td></tr>
-    <tr><td style="padding:6px 10px;">Recall</td><td style="text-align:right; padding:6px 10px;">1.000</td></tr>
-    <tr><td style="padding:6px 10px;">F1</td><td style="text-align:right; padding:6px 10px;">0.994</td></tr>
-    <tr><td style="padding:6px 10px;">AUC (ROC)</td><td style="text-align:right; padding:6px 10px;">1.000</td></tr>
-    <tr><td style="padding:6px 10px;">Average Precision (PR)</td><td style="text-align:right; padding:6px 10px;">1.000</td></tr>
-  </tbody>
+<thead>
+<tr>
+<th style="text-align:left; padding:6px 10px; border-bottom:1px solid #ddd;">Metric</th>
+<th style="text-align:right; padding:6px 10px; border-bottom:1px solid #ddd;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr><td style="padding:6px 10px;">Best threshold (P(Not))</td><td style="text-align:right; padding:6px 10px;"><b>0.320</b></td></tr>
+<tr><td style="padding:6px 10px;">Accuracy</td><td style="text-align:right; padding:6px 10px;">0.990</td></tr>
+<tr><td style="padding:6px 10px;">Precision</td><td style="text-align:right; padding:6px 10px;">0.988</td></tr>
+<tr><td style="padding:6px 10px;">Recall</td><td style="text-align:right; padding:6px 10px;">1.000</td></tr>
+<tr><td style="padding:6px 10px;">F1</td><td style="text-align:right; padding:6px 10px;">0.994</td></tr>
+<tr><td style="padding:6px 10px;">AUC (ROC)</td><td style="text-align:right; padding:6px 10px;">1.000</td></tr>
+<tr><td style="padding:6px 10px;">Average Precision (PR)</td><td style="text-align:right; padding:6px 10px;">1.000</td></tr>
+</tbody>
 </table>
 
-    <details>
-    <summary>Markdown table (fallback)</summary>
+<details>
+<summary>Markdown table (fallback)</summary>
 
-    <!-- Markdown fallback table (for renderers that ignore HTML) -->
+<!-- Markdown fallback table (for renderers that ignore HTML) -->
 | **Metric**                | **Value** |
 |:--------------------------|----------:|
 | Best threshold *(P(Not))* | **0.320** |
@@ -184,8 +185,7 @@ Access the notebook in your web browser at: ```http://localhost:8888/lab?```
 | F1                        | 0.994 |
 | AUC (ROC)                 | 1.000 |
 | Average Precision (PR)    | 1.000 |
-    </details>
-
+</details>
 <!-- PERF:END -->
 
 

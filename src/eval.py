@@ -3,7 +3,6 @@ import logging
 import argparse
 import pandas as pd
 from pathlib import Path
-from textwrap import dedent
 import matplotlib.pyplot as plt
 
 import torch
@@ -48,86 +47,79 @@ def render_perf_section(best_thr: float,
                         f1: float,
                         auc: float,
                         ap: float,
-                        pr_curve_relpath: str = "assets/pr_curve.png") -> str:
-  """
-  Returns a README-ready section with:
-    - a linked PR curve image
-    - a styled HTML table (GitHub-friendly)
-    - a collapsible Markdown fallback table
-  """
+                        pr_curve_relpath: str = "assets/pr_curve.png",
+                        include_fallback: bool = True) -> str:
 
-  def f3(x: float) -> str:  # uniform number formatting
+  def f3(x: float) -> str:
     return f"{x:.3f}"
 
-  html_table = dedent(f"""
-    <!-- HTML table for rich rendering -->
-    <table style="border-collapse:collapse; width:420px;">
-      <thead>
-        <tr>
-          <th style="text-align:left; padding:6px 10px; border-bottom:1px solid #ddd;">Metric</th>
-          <th style="text-align:right; padding:6px 10px; border-bottom:1px solid #ddd;">Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td style="padding:6px 10px;">Best threshold (P(Not))</td><td style="text-align:right; padding:6px 10px;"><b>{f3(best_thr)}</b></td></tr>
-        <tr><td style="padding:6px 10px;">Accuracy</td><td style="text-align:right; padding:6px 10px;">{f3(acc)}</td></tr>
-        <tr><td style="padding:6px 10px;">Precision</td><td style="text-align:right; padding:6px 10px;">{f3(prec)}</td></tr>
-        <tr><td style="padding:6px 10px;">Recall</td><td style="text-align:right; padding:6px 10px;">{f3(rec)}</td></tr>
-        <tr><td style="padding:6px 10px;">F1</td><td style="text-align:right; padding:6px 10px;">{f3(f1)}</td></tr>
-        <tr><td style="padding:6px 10px;">AUC (ROC)</td><td style="text-align:right; padding:6px 10px;">{f3(auc)}</td></tr>
-        <tr><td style="padding:6px 10px;">Average Precision (PR)</td><td style="text-align:right; padding:6px 10px;">{f3(ap)}</td></tr>
-      </tbody>
-    </table>
-    """).strip()
+  html_table = (f"""<!-- HTML table for rich rendering -->
+<table style="border-collapse:collapse; width:420px;">
+  <thead>
+    <tr>
+      <th style="text-align:left; padding:6px 10px; border-bottom:1px solid #ddd;">Metric</th>
+      <th style="text-align:right; padding:6px 10px; border-bottom:1px solid #ddd;">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:6px 10px;">Best threshold (P(Not))</td><td style="text-align:right; padding:6px 10px;"><b>{f3(best_thr)}</b></td></tr>
+    <tr><td style="padding:6px 10px;">Accuracy</td><td style="text-align:right; padding:6px 10px;">{f3(acc)}</td></tr>
+    <tr><td style="padding:6px 10px;">Precision</td><td style="text-align:right; padding:6px 10px;">{f3(prec)}</td></tr>
+    <tr><td style="padding:6px 10px;">Recall</td><td style="text-align:right; padding:6px 10px;">{f3(rec)}</td></tr>
+    <tr><td style="padding:6px 10px;">F1</td><td style="text-align:right; padding:6px 10px;">{f3(f1)}</td></tr>
+    <tr><td style="padding:6px 10px;">AUC (ROC)</td><td style="text-align:right; padding:6px 10px;">{f3(auc)}</td></tr>
+    <tr><td style="padding:6px 10px;">Average Precision (PR)</td><td style="text-align:right; padding:6px 10px;">{f3(ap)}</td></tr>
+  </tbody>
+</table>""").strip()
 
-  md_table = dedent(f"""
-    <!-- Markdown fallback table (for renderers that ignore HTML) -->
-    | **Metric**                | **Value** |
-    |:--------------------------|----------:|
-    | Best threshold *(P(Not))* | **{f3(best_thr)}** |
-    | Accuracy                  | {f3(acc)} |
-    | Precision                 | {f3(prec)} |
-    | Recall                    | {f3(rec)} |
-    | F1                        | {f3(f1)} |
-    | AUC (ROC)                 | {f3(auc)} |
-    | Average Precision (PR)    | {f3(ap)} |
-    """).strip()
+  md_table = (f"""<!-- Markdown fallback table (for renderers that ignore HTML) -->
+| **Metric**                | **Value** |
+|:--------------------------|----------:|
+| Best threshold *(P(Not))* | **{f3(best_thr)}** |
+| Accuracy                  | {f3(acc)} |
+| Precision                 | {f3(prec)} |
+| Recall                    | {f3(rec)} |
+| F1                        | {f3(f1)} |
+| AUC (ROC)                 | {f3(auc)} |
+| Average Precision (PR)    | {f3(ap)} |""").strip()
 
-  md = dedent(f"""### Model Performance
-    ![PR Curve]({pr_curve_relpath})
+  body = (f"""### Model Performance
 
-    {html_table}
+![PR Curve]({pr_curve_relpath})
 
-    <details>
-    <summary>Markdown table (fallback)</summary>
+{html_table}""").strip()
 
-    {md_table}
-    </details>
-    """).rstrip()
-  return md
+  if include_fallback:
+    body += (f"""
+
+<details>
+<summary>Markdown table (fallback)</summary>
+
+{md_table}
+</details>""")
+
+  return body
+
+
+def _flush_left(s: str) -> str:
+  # remove leading spaces/tabs on every line
+  return "\n".join(line.lstrip() for line in s.splitlines()).strip()
 
 
 def update_readme_performance(md_block: str,
                               repo_dir: Path,
                               start_marker: str = "<!-- PERF:START -->",
                               end_marker: str = "<!-- PERF:END -->") -> Path:
-  """Insert/replace a markdown block into README.md within repo_dir between markers."""
   readme = repo_dir / "README.md"
   readme.parent.mkdir(parents=True, exist_ok=True)
 
-  block_clean = md_block.lstrip()
-  header = f"{start_marker}\n"
-  footer = f"\n{end_marker}"
-  block = f"\n{header}{block_clean}\n{footer}\n"
+  block_clean = _flush_left(md_block)
+  block = f"\n{start_marker}\n{block_clean}\n{end_marker}\n"
 
-  if readme.exists():
-    text = readme.read_text(encoding="utf-8")
-    # replace even if the old block had extra indentation/newlines
-    pattern = re.compile(rf"{re.escape(start_marker)}.*?{re.escape(end_marker)}", re.DOTALL)
-    new_text = pattern.sub(block.strip("\n"),
-                           text) if pattern.search(text) else (text.rstrip("\n") + block)
-  else:
-    new_text = f"# vismod\n{block}"
+  text = readme.read_text(encoding="utf-8") if readme.exists() else "# vismod\n"
+  pattern = re.compile(rf"{re.escape(start_marker)}.*?{re.escape(end_marker)}", re.DOTALL)
+  new_text = pattern.sub(block.strip("\n"), text) if pattern.search(text) else (text.rstrip("\n") +
+                                                                                block)
 
   readme.write_text(new_text, encoding="utf-8")
   logger.info(f"Updated README: {readme}")
